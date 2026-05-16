@@ -7,12 +7,12 @@ templates like curio tables) and saves them side-by-side.
 
 import json
 import os
-import re
-import sys
 import time
-import urllib.request
 import urllib.parse
 import urllib.error
+import urllib.request
+
+from curios import extract_curios
 
 API = "https://darkestdungeon.wiki.gg/api.php"
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "darkestdungeon_wiki")
@@ -162,11 +162,34 @@ def fetch_parsed_html_single(title: str) -> str:
     return parse_data.get("text", {}).get("*", "")
 
 
-def sanitize_filename(title: str) -> str:
-    name = title.replace("/", "__slash__")
+def sanitize_path_part(part: str) -> str:
+    name = part
     for ch in ['\\', ':', '*', '?', '"', '<', '>', '|']:
         name = name.replace(ch, f"__{ord(ch):02x}__")
     return name
+
+
+def artifact_path(title: str, extension: str) -> str:
+    parts = [sanitize_path_part(part) for part in title.split("/")]
+    parts[-1] = f"{parts[-1]}.{extension}"
+    return os.path.join(OUT_DIR, *parts)
+
+
+def write_text_file(path: str, content: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+
+def write_json_file(path: str, data: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def read_text_file(path: str) -> str:
+    with open(path, encoding="utf-8") as f:
+        return f.read()
 
 
 def main():
@@ -199,10 +222,8 @@ def main():
             print(f"Fetching batch {i // 50 + 1}/{(total + 49) // 50}: {batch[0][:40]}...")
             contents = fetch_page_content_batch(batch)
             for title, content in contents.items():
-                safe = sanitize_filename(title)
-                filepath = os.path.join(OUT_DIR, f"{safe}.wiki")
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write(content)
+                filepath = artifact_path(title, "wiki")
+                write_text_file(filepath, content)
                 done.add(title)
 
             with open(progress_path, "w") as f:
@@ -246,10 +267,8 @@ def main():
             print(f"  HTML: {title}")
             try:
                 html = fetch_parsed_html_single(title)
-                safe = sanitize_filename(title)
-                filepath = os.path.join(OUT_DIR, f"{safe}.html")
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write(html)
+                filepath = artifact_path(title, "html")
+                write_text_file(filepath, html)
                 html_done.add(title)
 
                 html_manifest = {"total": len(key_pages), "completed": sorted(html_done)}
@@ -259,7 +278,32 @@ def main():
                 print(f"    ERROR: {e}")
             time.sleep(0.5)
 
-    print(f"\nAll done! HTML pages: {len(html_done)}/{len(key_pages)}")
+    # ------------------------------------------------------------------
+    # PHASE 3: Parse page-local curio data from saved parsed HTML.
+    # ------------------------------------------------------------------
+    print("\nParsing curio data from parsed HTML...")
+    parsed_curio_pages = 0
+    for title in key_pages:
+        html_path = artifact_path(title, "html")
+        if not os.path.exists(html_path):
+            print(f"  Missing HTML, skipping: {title}")
+            continue
+
+        html = read_text_file(html_path)
+        curios = extract_curios(html)
+        curio_path = artifact_path(title, "curios.json")
+        write_json_file(
+            curio_path,
+            {
+                "title": title,
+                "source_html": os.path.relpath(html_path, OUT_DIR),
+                "curios": curios,
+            },
+        )
+        parsed_curio_pages += 1
+        print(f"  Curios: {title} ({len(curios)})")
+
+    print(f"\nAll done! HTML pages: {len(html_done)}/{len(key_pages)}, curio pages: {parsed_curio_pages}")
 
 
 if __name__ == "__main__":
