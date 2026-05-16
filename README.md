@@ -14,8 +14,6 @@ The project currently focuses on:
 ```text
 .
 ├── scrape_darkestdungeon.py      # Main scraper for wiki pages and selected parsed HTML
-├── curios.py                     # Curio table parsing logic
-├── parse_curios.py               # Debug helper for parsing saved HTML files
 ├── download_icons.py             # Downloads selected icons into a companion project
 ├── requirements.txt              # Python dependency list
 └── darkestdungeon_wiki/          # Generated wiki output and scrape manifests
@@ -60,21 +58,6 @@ Curio JSON is stored next to the page it was parsed from. For example:
 darkestdungeon_wiki/Courtyard.html
 darkestdungeon_wiki/Courtyard.curios.json
 ```
-
-### Debug Curio Parsing
-
-Run:
-
-```bash
-python3 parse_curios.py
-```
-
-This currently reads:
-
-- `darkestdungeon_wiki/Courtyard.html`
-- `darkestdungeon_wiki/Farmstead.html`
-
-It prints grouped curio interactions as JSON to stdout. The main scraper already writes `.curios.json` sidecars; this helper is only for debugging saved HTML files.
 
 ### Download Icons
 
