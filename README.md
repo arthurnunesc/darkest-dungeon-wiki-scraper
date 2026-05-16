@@ -6,7 +6,7 @@ The project currently focuses on:
 
 - Downloading raw MediaWiki wikitext for all main-namespace pages.
 - Downloading parsed HTML for selected pages whose data depends on expanded wiki templates.
-- Parsing curio interaction tables from saved HTML pages.
+- Parsing curio interaction tables into page-local JSON sidecars.
 - Downloading a fixed set of curio and provision icons for a companion project.
 
 ## Repository Layout
@@ -14,24 +14,24 @@ The project currently focuses on:
 ```text
 .
 ├── scrape_darkestdungeon.py      # Main scraper for wiki pages and selected parsed HTML
-├── parse_curios.py               # Extracts curio interaction data from saved HTML pages
+├── curios.py                     # Curio table parsing logic
+├── parse_curios.py               # Debug helper for parsing saved HTML files
 ├── download_icons.py             # Downloads selected icons into a companion project
+├── requirements.txt              # Python dependency list
 └── darkestdungeon_wiki/          # Generated wiki output and scrape manifests
 ```
 
 ## Requirements
 
 - Python 3.9 or newer
-- `beautifulsoup4` for `parse_curios.py`
+- `beautifulsoup4` for curio parsing
 - Network access to `https://darkestdungeon.wiki.gg`
 
-Install the only non-standard dependency with:
+Install dependencies with:
 
 ```bash
-python3 -m pip install beautifulsoup4
+python3 -m pip install -r requirements.txt
 ```
-
-The main scraper and icon downloader use only the Python standard library.
 
 ## Usage
 
@@ -47,13 +47,21 @@ This script writes files into `darkestdungeon_wiki/`:
 
 - `*.wiki` files for raw wikitext from main-namespace wiki pages.
 - `*.html` files for selected key pages with expanded templates.
+- `*.curios.json` files beside parsed HTML pages that contain curio data.
 - `manifest.json` to track completed raw page downloads.
 - `html_manifest.json` to track completed parsed HTML downloads.
 - `_progress.txt` with scrape progress.
 
 The scraper is resumable. If `manifest.json` or `html_manifest.json` already exists, completed pages are skipped.
 
-### Parse Curios
+Curio JSON is stored next to the page it was parsed from. For example:
+
+```text
+darkestdungeon_wiki/Courtyard.html
+darkestdungeon_wiki/Courtyard.curios.json
+```
+
+### Debug Curio Parsing
 
 Run:
 
@@ -66,7 +74,7 @@ This currently reads:
 - `darkestdungeon_wiki/Courtyard.html`
 - `darkestdungeon_wiki/Farmstead.html`
 
-It prints grouped curio interactions to stdout. The parser expects the parsed HTML files to already exist, so run `scrape_darkestdungeon.py` first if they are missing.
+It prints grouped curio interactions as JSON to stdout. The main scraper already writes `.curios.json` sidecars; this helper is only for debugging saved HTML files.
 
 ### Download Icons
 
@@ -88,11 +96,13 @@ Update `PROJECT_DIR` in `download_icons.py` before running it on another machine
 
 ## Output Notes
 
-Wiki page titles are converted into filesystem-safe names. For example, `/` is stored as `__slash__`, so a page such as `Vestal/Gallery` becomes a file named like:
+Wiki page titles are stored using the wiki page hierarchy. For example, `/` creates nested directories, so a page such as `Vestal/Gallery` becomes:
 
 ```text
-Vestal__slash__Gallery.wiki
+darkestdungeon_wiki/Vestal/Gallery.wiki
 ```
+
+Other filesystem-unsafe characters, such as `:`, `*`, and `?`, are escaped inside each path segment.
 
 The parsed HTML phase is intentionally limited to key pages that need expanded templates, such as location pages containing curio tables.
 
@@ -104,7 +114,6 @@ If you expand the scraper, keep request volume reasonable and respect the wiki h
 
 ## Limitations
 
-- There is no package metadata or pinned dependency file yet.
-- `parse_curios.py` prints results instead of writing JSON.
+- There is no package metadata or pinned lock file yet.
 - `download_icons.py` uses a hard-coded output project path.
 - The parsed HTML scraper fetches only selected key pages, not every wiki page.
