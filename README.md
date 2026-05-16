@@ -21,14 +21,21 @@ The project currently focuses on:
 
 ## Requirements
 
-- Python 3.9 or newer
-- `beautifulsoup4` for curio parsing
+- Python 3.10 or newer
+- Pinned Python dependencies from `requirements.txt`
 - Network access to `https://darkestdungeon.wiki.gg`
 
 Install dependencies with:
 
 ```bash
 python3 -m pip install -r requirements.txt
+```
+
+Using a virtual environment is recommended:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
 ## Usage
@@ -95,8 +102,13 @@ The scraper uses a custom user agent, sleeps between requests, and retries on tr
 
 If you expand the scraper, keep request volume reasonable and respect the wiki host.
 
+## Production Notes
+
+- Dependencies are pinned in `requirements.txt`, including transitive packages.
+- Generated scraper output is excluded from Git through `.gitignore`.
+- The scraper identifies itself with a project-specific user agent.
+
 ## Limitations
 
-- There is no package metadata or pinned lock file yet.
 - `download_icons.py` uses a hard-coded output project path.
 - The parsed HTML scraper fetches only selected key pages, not every wiki page.
