@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 
 API_URL = "https://darkestdungeon.wiki.gg/api.php"
 OUT_DIR = Path(__file__).resolve().parent / "darkestdungeon_wiki"
-USER_AGENT = "DarkestDungeonWikiScraper/1.1 (https://github.com/example; educational use)"
+USER_AGENT = "DarkestDungeonWikiScraper/1.1 (https://github.com/arthurnunesc/darkest-dungeon-wiki-scraper; educational use)"
 
 BATCH_SIZE = 50
 MAX_RETRIES = 5
